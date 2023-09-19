@@ -1,4 +1,4 @@
 // +k8s:deepcopy-gen=package
-// +groupName=mata.cnvrg.io
+// +groupName=metafirst.cnvrg.io
 
 package metafirst
