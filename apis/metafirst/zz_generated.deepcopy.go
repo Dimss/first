@@ -57,7 +57,7 @@ func (in *First) DeepCopyObject() runtime.Object {
 func (in *FirstList) DeepCopyInto(out *FirstList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]First, len(*in))

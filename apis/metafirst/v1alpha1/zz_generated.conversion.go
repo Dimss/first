@@ -112,7 +112,7 @@ func Convert_metafirst_First_To_v1alpha1_First(in *metafirst.First, out *First, 
 }
 
 func autoConvert_v1alpha1_FirstList_To_metafirst_FirstList(in *FirstList, out *metafirst.FirstList, s conversion.Scope) error {
-	out.ObjectMeta = in.ObjectMeta
+	out.ListMeta = in.ListMeta
 	out.Items = *(*[]metafirst.First)(unsafe.Pointer(&in.Items))
 	return nil
 }
@@ -123,7 +123,7 @@ func Convert_v1alpha1_FirstList_To_metafirst_FirstList(in *FirstList, out *metaf
 }
 
 func autoConvert_metafirst_FirstList_To_v1alpha1_FirstList(in *metafirst.FirstList, out *FirstList, s conversion.Scope) error {
-	out.ObjectMeta = in.ObjectMeta
+	out.ListMeta = in.ListMeta
 	out.Items = *(*[]First)(unsafe.Pointer(&in.Items))
 	return nil
 }
