@@ -1,6 +1,7 @@
 package apiserver
 
 import (
+	"fmt"
 	"github.com/Dimss/first/apis/metafirst"
 	"github.com/Dimss/first/apis/metafirst/install"
 	"github.com/Dimss/first/pkg/registry"
@@ -21,6 +22,11 @@ var (
 
 func init() {
 	install.Install(Scheme)
+
+	for s, _ := range Scheme.AllKnownTypes() {
+		fmt.Println(s.GroupKind())
+	}
+
 	metav1.AddToGroupVersion(Scheme, schema.GroupVersion{Version: "v1"})
 	unversioned := schema.GroupVersion{Group: "", Version: "v1"}
 	Scheme.AddUnversionedTypes(unversioned,
@@ -32,7 +38,8 @@ func init() {
 	)
 }
 
-type ExtraConfig struct{}
+type ExtraConfig struct {
+}
 
 type Config struct {
 	GenericConfig *genericapiserver.RecommendedConfig
@@ -83,7 +90,9 @@ func (c completedConfig) New() (*FirstServer, error) {
 
 	v1alpha1storage := map[string]rest.Storage{}
 
-	v1alpha1storage["firsts"] = registry.RESTInPeace(first.NewREST(Scheme, c.GenericConfig.RESTOptionsGetter))
+	r, err := first.NewREST(Scheme, c.GenericConfig.RESTOptionsGetter)
+
+	v1alpha1storage["firsts"] = registry.RESTInPeace(r, err)
 
 	apiGroupInfo.VersionedResourcesStorageMap["v1alpha1"] = v1alpha1storage
 

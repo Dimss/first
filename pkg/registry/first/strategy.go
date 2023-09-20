@@ -33,7 +33,7 @@ func MatchFirst(label labels.Selector, field fields.Selector) storage.SelectionP
 func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, error) {
 	apiserver, ok := obj.(*metafirst.First)
 	if !ok {
-		return nil, nil, fmt.Errorf("given object is not a ClusterGateway")
+		return nil, nil, fmt.Errorf("given object is not a First")
 	}
 	return labels.Set(apiserver.ObjectMeta.Labels), SelectableFields(apiserver), nil
 }

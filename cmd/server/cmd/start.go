@@ -18,7 +18,6 @@ import (
 	"k8s.io/client-go/informers"
 	netutils "k8s.io/utils/net"
 	"net"
-	"os"
 )
 
 const defaultEtcdPathPrefix = "/registry/metafirst.cnvrg.io"
@@ -32,10 +31,6 @@ type FirstServerOptions struct {
 	AlternateDNS []string
 }
 
-func init() {
-	rootCmd.AddCommand(startCmd)
-}
-
 func (o *FirstServerOptions) Validate(args []string) error {
 	var errors []error
 	errors = append(errors, o.RecommendedOptions.Validate()...)
@@ -45,8 +40,11 @@ func (o *FirstServerOptions) Validate(args []string) error {
 // Complete fills in fields required to have valid data
 func (o *FirstServerOptions) Complete() error {
 	o.RecommendedOptions.Etcd.StorageConfig.Paging = true
-
-	o.RecommendedOptions.Etcd.StorageConfig.Transport.ServerList = []string{"127.0.0.1"}
+	o.RecommendedOptions.Etcd.StorageConfig.Transport.ServerList = []string{"localhost:2379"}
+	o.RecommendedOptions.SecureServing.BindPort = 8443
+	o.RecommendedOptions.Authentication.RemoteKubeConfigFile = "/Users/dkartsev/.kube/config"
+	o.RecommendedOptions.Authorization.RemoteKubeConfigFile = "/Users/dkartsev/.kube/config"
+	//o.RecommendedOptions.FeatureGate.
 	return nil
 }
 
@@ -64,13 +62,19 @@ func (o *FirstServerOptions) Config() (*apiserver.Config, error) {
 
 	serverConfig := genericapiserver.NewRecommendedConfig(apiserver.Codecs)
 
-	serverConfig.OpenAPIConfig = genericapiserver.DefaultOpenAPIConfig(metafirstopenapi.GetOpenAPIDefinitions, openapi.NewDefinitionNamer(apiserver.Scheme))
-	serverConfig.OpenAPIConfig.Info.Title = "First"
+	serverConfig.OpenAPIConfig = genericapiserver.DefaultOpenAPIConfig(
+		metafirstopenapi.GetOpenAPIDefinitions,
+		openapi.NewDefinitionNamer(apiserver.Scheme),
+	)
+	serverConfig.OpenAPIConfig.Info.Title = "Metafirst"
 	serverConfig.OpenAPIConfig.Info.Version = "0.1"
 
 	if utilfeature.DefaultFeatureGate.Enabled(features.OpenAPIV3) {
-		serverConfig.OpenAPIV3Config = genericapiserver.DefaultOpenAPIV3Config(metafirstopenapi.GetOpenAPIDefinitions, openapi.NewDefinitionNamer(apiserver.Scheme))
-		serverConfig.OpenAPIV3Config.Info.Title = "First"
+		serverConfig.OpenAPIV3Config = genericapiserver.DefaultOpenAPIV3Config(
+			metafirstopenapi.GetOpenAPIDefinitions,
+			openapi.NewDefinitionNamer(apiserver.Scheme),
+		)
+		serverConfig.OpenAPIV3Config.Info.Title = "Metafirst"
 		serverConfig.OpenAPIV3Config.Info.Version = "0.1"
 	}
 
@@ -96,11 +100,11 @@ func (o *FirstServerOptions) RunFirstServer(stopCh <-chan struct{}) error {
 		return err
 	}
 
-	server.GenericAPIServer.AddPostStartHookOrDie("start-first-server-informers", func(context genericapiserver.PostStartHookContext) error {
-		config.GenericConfig.SharedInformerFactory.Start(context.StopCh)
-		o.SharedInformerFactory.Start(context.StopCh)
-		return nil
-	})
+	//server.GenericAPIServer.AddPostStartHookOrDie("start-first-server-informers", func(context genericapiserver.PostStartHookContext) error {
+	//	config.GenericConfig.SharedInformerFactory.Start(context.StopCh)
+	//	o.SharedInformerFactory.Start(context.StopCh)
+	//	return nil
+	//})
 
 	return server.GenericAPIServer.PrepareRun().Run(stopCh)
 }
@@ -116,32 +120,39 @@ func NewFirstServerOptions(out, errOut io.Writer) *FirstServerOptions {
 		StdErr: errOut,
 	}
 
-	o.RecommendedOptions.Etcd.StorageConfig.EncodeVersioner = runtime.NewMultiGroupVersioner(v1alpha1.SchemeGroupVersion, schema.GroupKind{Group: v1alpha1.GroupName})
+	o.RecommendedOptions.Etcd.StorageConfig.EncodeVersioner = runtime.NewMultiGroupVersioner(
+		v1alpha1.SchemeGroupVersion, schema.GroupKind{
+			Group: v1alpha1.GroupName,
+		},
+	)
 
 	return o
 }
 
-var startCmd = &cobra.Command{
-	Use:   "start First K8s AA Server",
-	Short: "start the aa server",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		stopCh := genericapiserver.SetupSignalHandler()
-		options := NewFirstServerOptions(os.Stdout, os.Stderr)
+func NewCommandStartFirstServer(defaults *FirstServerOptions, stopCh <-chan struct{}) *cobra.Command {
+	o := *defaults
+	cmd := &cobra.Command{
+		Use:   "start First K8s AA Server",
+		Short: "start the aa server",
+		RunE: func(cmd *cobra.Command, args []string) error {
 
-		flags := cmd.Flags()
-		options.RecommendedOptions.AddFlags(flags)
-		utilfeature.DefaultMutableFeatureGate.AddFlag(flags)
+			if err := o.Complete(); err != nil {
+				return err
+			}
+			if err := o.Validate(args); err != nil {
+				return err
+			}
+			if err := o.RunFirstServer(stopCh); err != nil {
+				return err
+			}
 
-		if err := options.Complete(); err != nil {
-			return err
-		}
-		if err := options.Validate(args); err != nil {
-			return err
-		}
-		if err := options.RunFirstServer(stopCh); err != nil {
-			return err
-		}
+			return nil
+		},
+	}
 
-		return nil
-	},
+	flags := cmd.Flags()
+	o.RecommendedOptions.AddFlags(flags)
+	utilfeature.DefaultMutableFeatureGate.AddFlag(flags)
+
+	return cmd
 }

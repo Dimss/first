@@ -14,10 +14,12 @@ func NewREST(scheme *runtime.Scheme, optsGetter generic.RESTOptionsGetter) (*reg
 	strategy := newStrategy(scheme)
 
 	store := &genericregistry.Store{
-		NewFunc:                  func() runtime.Object { return &metafirst.First{} },
-		NewListFunc:              func() runtime.Object { return &metafirst.FirstList{} },
-		PredicateFunc:            MatchFirst,
-		DefaultQualifiedResource: metafirst.Resource("firsts"),
+		NewFunc:     func() runtime.Object { return &metafirst.First{} },
+		NewListFunc: func() runtime.Object { return &metafirst.FirstList{} },
+
+		PredicateFunc:             MatchFirst,
+		DefaultQualifiedResource:  metafirst.Resource("firsts"),
+		SingularQualifiedResource: metafirst.Resource("first"),
 
 		CreateStrategy: strategy,
 		UpdateStrategy: strategy,

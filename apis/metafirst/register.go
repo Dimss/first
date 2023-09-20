@@ -18,6 +18,7 @@ var (
 
 	types = []runtime.Object{
 		&First{},
+		&FirstList{},
 	}
 )
 
